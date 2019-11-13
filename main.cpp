@@ -49,6 +49,8 @@ int main( int argc, const char** argv )
         help();
         return -1;
     }
+    resize(image, image, Size(0,0),0.75,0.75,INTER_AREA);
+
     cedge.create(image.size(), image.type());
     cvtColor(image, gray, COLOR_BGR2GRAY);
     // Create a window
