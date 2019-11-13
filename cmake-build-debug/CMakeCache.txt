@@ -151,7 +151,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=untitled
+CMAKE_PROJECT_NAME:STATIC=nc-rd-facemask
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib
@@ -212,8 +212,23 @@ CMAKE_STRIP:FILEPATH=/Applications/Xcode.app/Contents/Developer/Toolchains/Xcode
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
+//Value Computed by CMake
+OpenCV1_BINARY_DIR:STATIC=/Users/ron.steiner/CLionProjects/OpenCV1/cmake-build-debug
+
+//Value Computed by CMake
+OpenCV1_SOURCE_DIR:STATIC=/Users/ron.steiner/CLionProjects/OpenCV1
+
+//The directory containing a CMake configuration file for OpenCV.
+OpenCV_DIR:PATH=/usr/local/lib/cmake/opencv4
+
 //Path to a program.
 ProcessorCount_cmd_sysctl:FILEPATH=/usr/sbin/sysctl
+
+//Value Computed by CMake
+nc-rd-facemask_BINARY_DIR:STATIC=/Users/ron.steiner/CLionProjects/OpenCV1/cmake-build-debug
+
+//Value Computed by CMake
+nc-rd-facemask_SOURCE_DIR:STATIC=/Users/ron.steiner/CLionProjects/OpenCV1
 
 //Value Computed by CMake
 untitled_BINARY_DIR:STATIC=/Users/ron.steiner/CLionProjects/OpenCV1/cmake-build-debug
@@ -361,6 +376,8 @@ CMAKE_STRIP-ADVANCED:INTERNAL=1
 CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//Details about finding OpenCV
+FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[/usr/local/Cellar/opencv/4.1.2][v4.1.2()]
 //ADVANCED property for variable: ProcessorCount_cmd_sysctl
 ProcessorCount_cmd_sysctl-ADVANCED:INTERNAL=1
 
