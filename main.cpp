@@ -3,6 +3,9 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include <stdio.h>
+
+#include "v1.h"
+
 using namespace cv;
 using namespace std;
 int edgeThresh = 1;
