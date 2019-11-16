@@ -79,10 +79,17 @@ static void onTrackbar(int, void *) {
     Mat cnt_img = Mat::zeros(w, w, CV_8UC3);
     image.copyTo(cnt_img);
     int _levels = levels - 3;
+    int maxArea = 0, max=0;
     for(int i=0; i<contours.size(); i++) {
-        drawContours(cnt_img, contours, i, Scalar(128, 255, 255),
-                     3, LINE_AA, hierarchy, std::abs(_levels));
+        int current = contourArea(contours[i],false);
+        if(current > max){
+            max=current;
+            maxArea=i;
+        }
     }
+
+    drawContours(cnt_img, contours, maxArea, Scalar(128, 255, 255),
+                 3, LINE_AA, hierarchy, std::abs(_levels));
     imshow("contours", cnt_img);
 //    createTrackbar("levels+3", "contours", &levels, 7, on_trackbar);
 //    on_trackbar(0, nullptr);
