@@ -9,53 +9,121 @@
 using namespace cv;
 using namespace std;
 int edgeThresh = 1;
-int edgeThreshScharr=1;
+int edgeThreshScharr = 1;
 Mat image, gray, blurImage, edge1, edge2, cedge;
-const char* window_name1 = "Edge map : Canny default (Sobel gradient)";
-const char* window_name2 = "Edge map : Canny with custom gradient (Scharr)";
+const char *window_name1 = "Edge map : Canny default (Sobel gradient)";
+const char *window_name2 = "Edge map : Canny with custom gradient (Scharr)";
+
+
+const int w = 500;
+int levels = 3;
+vector<vector<Point> > contours;
+vector<Vec4i> hierarchy;
+
+static void on_trackbar(int, void *) {
+    Mat cnt_img = Mat::zeros(w, w, CV_8UC3);
+    int _levels = levels - 3;
+    drawContours(cnt_img, contours, _levels <= 0 ? 3 : -1, Scalar(128, 255, 255),
+                 3, LINE_AA, hierarchy, std::abs(_levels));
+    imshow("contours", cnt_img);
+}
+
 // define a trackbar callback
-static void onTrackbar(int, void*)
-{
-    blur(gray, blurImage, Size(3,3));
+static void onTrackbar(int, void *) {
+    Mat binary;
+    binary.create(gray.size(), CV_8UC1);
+
+
+    blur(gray, blurImage, Size(3, 3));
+
+    namedWindow("temp", 1);
+    imshow("temp", blurImage);
+    waitKey(0);
+
+
+    namedWindow("contours", 1);
+    threshold(blurImage, binary, 25, 255, THRESH_BINARY_INV + THRESH_OTSU);
+    imshow("temp", binary);
+    waitKey(0);
+
+    if(binary.type() != CV_8UC1){
+        binary.convertTo(binary,CV_8UC1);
+        imshow("temp", binary);
+        waitKey(0);
+
+    }
+    int niters = 3;
+
+    dilate(binary, binary, Mat(), Point(-1, -1), niters);
+    erode(binary, binary, Mat(), Point(-1, -1), niters * 2);
+    dilate(binary, binary, Mat(), Point(-1, -1), niters);
+
+
+
     // Run the edge detector on grayscale
-    Canny(blurImage, edge1, edgeThresh, edgeThresh*3, 3);
-    cedge = Scalar::all(0);
-    image.copyTo(cedge, edge1);
-    imshow(window_name1, cedge);
-    Mat dx,dy;
-    Scharr(blurImage,dx,CV_16S,1,0);
-    Scharr(blurImage,dy,CV_16S,0,1);
-    Canny( dx,dy, edge2, edgeThreshScharr, edgeThreshScharr*3 );
+    Canny(binary, edge1, edgeThresh, edgeThresh * 3, 3);
+    //cedge.create(gray.size(), CV_8UC1);
+//    image.copyTo(cedge, edge1);
+//
+
+    imshow("temp", edge1);
+    waitKey(0);
+
+    vector<vector<Point> > contours0;
+    findContours(edge1, contours0, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+    contours.resize(contours0.size());
+    for (size_t k = 0; k < contours0.size(); k++)
+        approxPolyDP(Mat(contours0[k]), contours[k], 3, true);
+    namedWindow("contours", 1);
+
+    Mat cnt_img = Mat::zeros(w, w, CV_8UC3);
+    image.copyTo(cnt_img);
+    int _levels = levels - 3;
+    for(int i=0; i<contours.size(); i++) {
+        drawContours(cnt_img, contours, i, Scalar(128, 255, 255),
+                     3, LINE_AA, hierarchy, std::abs(_levels));
+    }
+    imshow("contours", cnt_img);
+//    createTrackbar("levels+3", "contours", &levels, 7, on_trackbar);
+//    on_trackbar(0, nullptr);
+
+//    imshow(window_name1, cedge);
+    /*imshow(window_name1, edge1);
+    Mat dx, dy;
+    Scharr(blurImage, dx, CV_16S, 1, 0);
+    Scharr(blurImage, dy, CV_16S, 0, 1);
+    Canny(dx, dy, edge2, edgeThreshScharr, edgeThreshScharr * 3);
     cedge = Scalar::all(0);
     image.copyTo(cedge, edge2);
-    imshow(window_name2, cedge);
+    imshow(window_name2, cedge);*/
 }
-static void help()
-{
+
+static void help() {
     printf("\nThis sample demonstrates Canny edge detection\n"
            "Call:\n"
            "    /.edge [image_name -- Default is fruits.jpg]\n\n");
 }
-const char* keys =
+
+const char *keys =
         {
                 "{help h||}{@image |fruits.jpg|input image name}"
         };
-int main( int argc, const char** argv )
-{
+
+int main(int argc, const char **argv) {
     help();
     CommandLineParser parser(argc, argv, keys);
     string filename = parser.get<string>(0);
     image = imread(samples::findFile(filename), IMREAD_COLOR);
-    if(image.empty())
-    {
+    if (image.empty()) {
         printf("Cannot read image file: %s\n", filename.c_str());
         help();
         return -1;
     }
-    resize(image, image, Size(0,0),0.75,0.75,INTER_AREA);
+    resize(image, image, Size(0, 0), 0.75, 0.75, INTER_AREA);
 
-    cedge.create(image.size(), image.type());
+    cedge.create(image.size(), CV_8UC1/*image.type()*/);
     cvtColor(image, gray, COLOR_BGR2GRAY);
+    //cedge.convertTo(gray,CV_8UC1);
     // Create a window
     namedWindow(window_name1, 1);
     namedWindow(window_name2, 1);
