@@ -99,6 +99,15 @@ static void processImage(Mat &image) {
 
     drawContours(contouredImage, contours, maxArea, Scalar(128, 255, 255),
                  3, LINE_AA, hierarchy, std::abs(_levels));
+
+    RotatedRect rect = minAreaRect( contours[maxArea]);
+    Point2f box[4];
+    rect.points(box);
+    Scalar color = Scalar(0, 128, 255);
+    for( int j = 0; j < 4; j++ ){
+        line(contouredImage, box[j],box[(j+1)%4], color, 3,LINE_AA);
+    }
+
     namedWindow("contours", 1);
     imshow("contours", contouredImage);
 
