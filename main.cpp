@@ -22,7 +22,7 @@ vector<Vec4i> hierarchy;
 
 
 // define a trackbar callback
-static void processImage(Mat& image) {
+static void processImage(Mat &image) {
 
     resize(image, image, Size(0, 0), 0.75, 0.75, INTER_AREA);
 
@@ -46,8 +46,8 @@ static void processImage(Mat& image) {
     imshow("temp", binary);
     waitKey(0);
 
-    if(binary.type() != CV_8UC1){
-        binary.convertTo(binary,CV_8UC1);
+    if (binary.type() != CV_8UC1) {
+        binary.convertTo(binary, CV_8UC1);
         imshow("temp", binary);
         waitKey(0);
 
@@ -78,12 +78,22 @@ static void processImage(Mat& image) {
     Mat contouredImage = Mat::zeros(w, w, CV_8UC3);
     image.copyTo(contouredImage);
     int _levels = levels - 3;
-    int maxArea = 0, max=0;
-    for(int i=0; i<contours.size(); i++) {
-        int current = contourArea(contours[i],false);
-        if(current > max){
-            max=current;
-            maxArea=i;
+    int maxArea = 0, max = 0;
+    for (int i = 0; i < contours.size(); i++) {
+        int current = contourArea(contours[i], false);
+        if (current > max) {
+            // check the shape of it:
+            vector<Point> approx;
+            approxPolyDP(contours[i], approx, arcLength(contours[i], true) * 0.02, true);
+
+            // square contours should have 4 vertices after approximation
+            // relatively large area (to filter out noisy contours)
+            // and be convex.
+            // Note: absolute value of an area is used because
+            if( approx.size() == 4 && isContourConvex(approx) )            {
+                max = current;
+                maxArea = i;
+            }
         }
     }
 
