@@ -20,20 +20,17 @@ int levels = 3;
 vector<vector<Point> > contours;
 vector<Vec4i> hierarchy;
 
-static void on_trackbar(int, void *) {
-    Mat cnt_img = Mat::zeros(w, w, CV_8UC3);
-    int _levels = levels - 3;
-    drawContours(cnt_img, contours, _levels <= 0 ? 3 : -1, Scalar(128, 255, 255),
-                 3, LINE_AA, hierarchy, std::abs(_levels));
-    imshow("contours", cnt_img);
-}
 
 // define a trackbar callback
-static void onTrackbar(int, void *) {
-    Mat binary;
-    binary.create(gray.size(), CV_8UC1);
+static void processImage(Mat& image) {
+
+    resize(image, image, Size(0, 0), 0.75, 0.75, INTER_AREA);
+
+    // create a BW image:
+    cvtColor(image, gray, COLOR_BGR2GRAY);
 
 
+    // blur it to educe noise
     blur(gray, blurImage, Size(3, 3));
 
     namedWindow("temp", 1);
@@ -41,8 +38,11 @@ static void onTrackbar(int, void *) {
     waitKey(0);
 
 
-    namedWindow("contours", 1);
+    Mat binary;
+    binary.create(gray.size(), CV_8UC1);
+    // convert to binary image
     threshold(blurImage, binary, 25, 255, THRESH_BINARY_INV + THRESH_OTSU);
+
     imshow("temp", binary);
     waitKey(0);
 
@@ -52,19 +52,15 @@ static void onTrackbar(int, void *) {
         waitKey(0);
 
     }
-    int niters = 3;
+    // dilate, erode, dilate to further remove noise and small objects
+    int niters = 3; // in 3 iterations
 
     dilate(binary, binary, Mat(), Point(-1, -1), niters);
     erode(binary, binary, Mat(), Point(-1, -1), niters * 2);
     dilate(binary, binary, Mat(), Point(-1, -1), niters);
 
-
-
     // Run the edge detector on grayscale
     Canny(binary, edge1, edgeThresh, edgeThresh * 3, 3);
-    //cedge.create(gray.size(), CV_8UC1);
-//    image.copyTo(cedge, edge1);
-//
 
     imshow("temp", edge1);
     waitKey(0);
@@ -74,10 +70,13 @@ static void onTrackbar(int, void *) {
     contours.resize(contours0.size());
     for (size_t k = 0; k < contours0.size(); k++)
         approxPolyDP(Mat(contours0[k]), contours[k], 3, true);
-    namedWindow("contours", 1);
 
-    Mat cnt_img = Mat::zeros(w, w, CV_8UC3);
-    image.copyTo(cnt_img);
+    // see example in https://docs.opencv.org/master/db/d00/samples_2cpp_2squares_8cpp-example.html#a17
+    // for extracting squares
+
+    // or do this: find the contour with largest area - assume it is the document
+    Mat contouredImage = Mat::zeros(w, w, CV_8UC3);
+    image.copyTo(contouredImage);
     int _levels = levels - 3;
     int maxArea = 0, max=0;
     for(int i=0; i<contours.size(); i++) {
@@ -88,21 +87,11 @@ static void onTrackbar(int, void *) {
         }
     }
 
-    drawContours(cnt_img, contours, maxArea, Scalar(128, 255, 255),
+    drawContours(contouredImage, contours, maxArea, Scalar(128, 255, 255),
                  3, LINE_AA, hierarchy, std::abs(_levels));
-    imshow("contours", cnt_img);
-//    createTrackbar("levels+3", "contours", &levels, 7, on_trackbar);
-//    on_trackbar(0, nullptr);
+    namedWindow("contours", 1);
+    imshow("contours", contouredImage);
 
-//    imshow(window_name1, cedge);
-    /*imshow(window_name1, edge1);
-    Mat dx, dy;
-    Scharr(blurImage, dx, CV_16S, 1, 0);
-    Scharr(blurImage, dy, CV_16S, 0, 1);
-    Canny(dx, dy, edge2, edgeThreshScharr, edgeThreshScharr * 3);
-    cedge = Scalar::all(0);
-    image.copyTo(cedge, edge2);
-    imshow(window_name2, cedge);*/
 }
 
 static void help() {
@@ -126,19 +115,7 @@ int main(int argc, const char **argv) {
         help();
         return -1;
     }
-    resize(image, image, Size(0, 0), 0.75, 0.75, INTER_AREA);
-
-    cedge.create(image.size(), CV_8UC1/*image.type()*/);
-    cvtColor(image, gray, COLOR_BGR2GRAY);
-    //cedge.convertTo(gray,CV_8UC1);
-    // Create a window
-    namedWindow(window_name1, 1);
-    namedWindow(window_name2, 1);
-    // create a toolbar
-    createTrackbar("Canny threshold default", window_name1, &edgeThresh, 100, onTrackbar);
-    createTrackbar("Canny threshold Scharr", window_name2, &edgeThreshScharr, 400, onTrackbar);
-    // Show the image
-    onTrackbar(0, 0);
+    processImage(image);
     // Wait for a key stroke; the same function arranges events processing
     waitKey(0);
     return 0;
