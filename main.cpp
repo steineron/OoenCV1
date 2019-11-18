@@ -79,6 +79,7 @@ static void processImage(Mat &image) {
     image.copyTo(contouredImage);
     int _levels = levels - 3;
     int maxArea = 0, max = 0;
+    vector<Point> approxPoly;
     for (int i = 0; i < contours.size(); i++) {
         int current = contourArea(contours[i], false);
         if (current > max) {
@@ -93,6 +94,7 @@ static void processImage(Mat &image) {
             if( approx.size() == 4 && isContourConvex(approx) )            {
                 max = current;
                 maxArea = i;
+                approxPoly = approx; // keep record of hte approximated polygon
             }
         }
     }
@@ -100,12 +102,15 @@ static void processImage(Mat &image) {
     drawContours(contouredImage, contours, maxArea, Scalar(128, 255, 255),
                  3, LINE_AA, hierarchy, std::abs(_levels));
 
+
     RotatedRect rect = minAreaRect( contours[maxArea]);
     Point2f box[4];
     rect.points(box);
-    Scalar color = Scalar(0, 128, 255);
+    Scalar blue = Scalar(255, 128, 0);
+    Scalar red = Scalar(0, 128, 255);
     for( int j = 0; j < 4; j++ ){
-        line(contouredImage, box[j],box[(j+1)%4], color, 3,LINE_AA);
+        line(contouredImage, approxPoly[j], approxPoly[(j+1)%4], blue, 3, LINE_AA);
+        line(contouredImage, box[j], box[(j+1)%4], red, 3, LINE_AA);
     }
 
     namedWindow("contours", 1);
