@@ -16,18 +16,15 @@ const char *window_name2 = "Edge map : Canny with custom gradient (Scharr)";
 
 
 const int w = 500;
-int levels = 3;
-vector<vector<Point> > contours;
-vector<Vec4i> hierarchy;
 
 
 // define a trackbar callback
-static void processImage(Mat &image) {
+static void processImage(Mat &srcImage) {
 
-    resize(image, image, Size(0, 0), 0.75, 0.75, INTER_AREA);
+    resize(srcImage, srcImage, Size(0, 0), 0.75, 0.75, INTER_AREA);
 
     // create a BW image:
-    cvtColor(image, gray, COLOR_BGR2GRAY);
+    cvtColor(srcImage, gray, COLOR_BGR2GRAY);
 
 
     // blur it to educe noise
@@ -65,6 +62,11 @@ static void processImage(Mat &image) {
     imshow("temp", edge1);
     waitKey(0);
 
+
+    int levels = 3;
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+
     vector<vector<Point> > contours0;
     findContours(edge1, contours0, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
     contours.resize(contours0.size());
@@ -76,7 +78,7 @@ static void processImage(Mat &image) {
 
     // or do this: find the contour with largest area - assume it is the document
     Mat contouredImage = Mat::zeros(w, w, CV_8UC3);
-    image.copyTo(contouredImage);
+    srcImage.copyTo(contouredImage);
     int _levels = levels - 3;
     int maxArea = 0, max = 0;
     vector<Point> approxPoly;
@@ -91,7 +93,7 @@ static void processImage(Mat &image) {
             // relatively large area (to filter out noisy contours)
             // and be convex.
             // Note: absolute value of an area is used because
-            if( approx.size() == 4 && isContourConvex(approx) )            {
+            if (approx.size() == 4 && isContourConvex(approx)) {
                 max = current;
                 maxArea = i;
                 approxPoly = approx; // keep record of hte approximated polygon
@@ -103,18 +105,46 @@ static void processImage(Mat &image) {
                  3, LINE_AA, hierarchy, std::abs(_levels));
 
 
-    RotatedRect rect = minAreaRect( contours[maxArea]);
+    RotatedRect rect = minAreaRect(contours[maxArea]);
+    Rect boundRect = boundingRect(contours[maxArea]);
+
     Point2f box[4];
     rect.points(box);
     Scalar blue = Scalar(255, 128, 0);
     Scalar red = Scalar(0, 128, 255);
-    for( int j = 0; j < 4; j++ ){
-        line(contouredImage, approxPoly[j], approxPoly[(j+1)%4], blue, 3, LINE_AA);
-        line(contouredImage, box[j], box[(j+1)%4], red, 3, LINE_AA);
+    Scalar black = Scalar(0, 0, 0);
+
+    for (int j = 0; j < 4; j++) {
+        line(contouredImage, approxPoly[j], approxPoly[(j + 1) % 4], blue, 3, LINE_AA);
+        line(contouredImage, box[j], box[(j + 1) % 4], red, 3, LINE_AA);
     }
+    // draw the bounding rect
+    rectangle(contouredImage, Point(boundRect.x, boundRect.y),
+              Point(boundRect.x + boundRect.width, boundRect.y + boundRect.height), black, 3, LINE_AA);
 
     namedWindow("contours", 1);
     imshow("contours", contouredImage);
+
+    // transform the skewed image
+    std::vector<Point2f> polyPoints;
+    std::vector<Point2f> boundingRectPoints;
+    polyPoints.push_back(Point2f(approxPoly[0].x, approxPoly[0].y));
+    polyPoints.push_back(Point2f(approxPoly[1].x, approxPoly[1].y));
+    polyPoints.push_back(Point2f(approxPoly[3].x, approxPoly[3].y));
+    polyPoints.push_back(Point2f(approxPoly[2].x, approxPoly[2].y));
+
+    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y));
+    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + boundRect.height));
+    boundingRectPoints.push_back(Point2f(boundRect.x + boundRect.width, boundRect.y));
+    boundingRectPoints.push_back(Point2f(boundRect.x + boundRect.width, boundRect.y + boundRect.height));
+
+    Mat transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
+    Mat transformed = Mat::zeros(srcImage.rows, srcImage.cols, CV_8UC3);
+    warpPerspective(srcImage, transformed, transmtx, srcImage.size());
+
+    namedWindow("transformed", 1);
+    imshow("transformed", transformed);
+
 
 }
 
