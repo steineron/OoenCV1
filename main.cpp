@@ -17,6 +17,22 @@ const char *window_name2 = "Edge map : Canny with custom gradient (Scharr)";
 
 const int w = 500;
 
+static Point2f closestPoint(Point &p, Point2f points[]){
+
+    int minDistance = INT_MAX;
+    Point2f result;
+    for(int i=0; i<4; i++){
+        Point2f candidate = points[i];
+        int distance = pow(candidate.x - p.x, 2) + pow(candidate.y - p.y, 2);
+        if(distance < minDistance){
+            minDistance=distance;
+            result=candidate;
+        }
+    }
+    
+    return result;
+}
+
 
 // define a trackbar callback
 static void processImage(Mat &srcImage) {
@@ -130,24 +146,36 @@ static void processImage(Mat &srcImage) {
               Point(boundRect.x + boundRect.width, boundRect.y + boundRect.height), black, 3, LINE_AA);
 
 
-    namedWindow("contours", 1);
-    imshow("contours", contouredImage);
 
     // transform the skewed image
     std::vector<Point2f> polyPoints;
     std::vector<Point2f> boxPoints;
     std::vector<Point2f> boundingRectPoints;
-
     // poly to box:
-    polyPoints.push_back(Point2f(approxPoly[0].x, approxPoly[0].y));
-    polyPoints.push_back(Point2f(approxPoly[1].x, approxPoly[1].y));
-    polyPoints.push_back(Point2f(approxPoly[3].x, approxPoly[3].y));
-    polyPoints.push_back(Point2f(approxPoly[2].x, approxPoly[2].y));
 
-    boundingRectPoints.push_back(box[0]);
-    boundingRectPoints.push_back(box[1]);
-    boundingRectPoints.push_back(box[3]);
-    boundingRectPoints.push_back(box[2]);
+    for(int i=0; i<4; i++){
+        polyPoints.push_back(Point2f(approxPoly[i].x, approxPoly[i].y));
+        boundingRectPoints.push_back(closestPoint(approxPoly[i], box));
+    }
+
+    /*polyPoints.push_back(Point2f(approxPoly[0].x, approxPoly[0].y));
+    boundingRectPoints.push_back(closestPoint(approxPoly[0], box));
+
+    polyPoints.push_back(Point2f(approxPoly[1].x, approxPoly[1].y));
+    boundingRectPoints.push_back(closestPoint(approxPoly[1], box));
+
+    polyPoints.push_back(Point2f(approxPoly[2].x, approxPoly[2].y));
+    boundingRectPoints.push_back(closestPoint(approxPoly[2], box));
+
+    polyPoints.push_back(Point2f(approxPoly[3].x, approxPoly[3].y));
+    boundingRectPoints.push_back(closestPoint(approxPoly[3], box));*/
+
+    for (int j = 0; j < 4; j++) {
+        putText(contouredImage, numbers[j], boundingRectPoints[j], FONT_HERSHEY_SIMPLEX,textScale,black,textThinkness,LINE_8,
+                false);
+    }
+    namedWindow("contours", 1);
+    imshow("contours", contouredImage);
 
     Mat transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
     Mat transformed = Mat::zeros(srcImage.rows, srcImage.cols, CV_8UC3);
@@ -158,17 +186,39 @@ static void processImage(Mat &srcImage) {
     polyPoints.clear();
     boundingRectPoints.clear();
 
+    /*
     polyPoints.push_back(box[0]);
     polyPoints.push_back(box[1]);
     polyPoints.push_back(box[3]);
-    polyPoints.push_back(box[2]);
+    polyPoints.push_back(box[2]);*/
 
     boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y));
     boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + rect.size.height));
     boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y));
     boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y + rect.size.height));
 
-     transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
+    for (int i = 0; i < 4; ++i) {
+        Point p = Point(boundingRectPoints[i].x, boundingRectPoints[i].y);
+        polyPoints.push_back(closestPoint(p, box));
+
+    }
+
+
+    contouredImage = image.clone();
+
+    Scalar orange = Scalar(0,255,220);
+    for (int j = 0; j < 4; j++) {
+        line(contouredImage, polyPoints[j], polyPoints[(j + 1) % 4], red, 3, LINE_AA);
+        putText(contouredImage, numbers[j], polyPoints[j], FONT_HERSHEY_SIMPLEX,textScale,red,textThinkness);
+        line(contouredImage, boundingRectPoints[j], boundingRectPoints[(j + 1) % 4], orange, 3, LINE_AA);
+        putText(contouredImage, numbers[j], boundingRectPoints[j], FONT_HERSHEY_SIMPLEX,textScale,orange,textThinkness);
+        line(contouredImage, boundingRectPoints[j], polyPoints[j], blue, 3, LINE_AA);
+    }
+
+    namedWindow("contours-transformed", 1);
+    imshow("contours-transformed", contouredImage);
+
+    transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
     warpPerspective(transformed, transformed, transmtx, transformed.size());
 
     namedWindow("transformed", 1);
