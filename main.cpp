@@ -127,20 +127,41 @@ static void processImage(Mat &srcImage) {
 
     // transform the skewed image
     std::vector<Point2f> polyPoints;
+    std::vector<Point2f> boxPoints;
     std::vector<Point2f> boundingRectPoints;
+
+    // poly to box:
     polyPoints.push_back(Point2f(approxPoly[0].x, approxPoly[0].y));
     polyPoints.push_back(Point2f(approxPoly[1].x, approxPoly[1].y));
     polyPoints.push_back(Point2f(approxPoly[3].x, approxPoly[3].y));
     polyPoints.push_back(Point2f(approxPoly[2].x, approxPoly[2].y));
 
-    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y));
-    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + boundRect.height));
-    boundingRectPoints.push_back(Point2f(boundRect.x + boundRect.width, boundRect.y));
-    boundingRectPoints.push_back(Point2f(boundRect.x + boundRect.width, boundRect.y + boundRect.height));
+    boundingRectPoints.push_back(box[0]);
+    boundingRectPoints.push_back(box[1]);
+    boundingRectPoints.push_back(box[3]);
+    boundingRectPoints.push_back(box[2]);
 
     Mat transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
     Mat transformed = Mat::zeros(srcImage.rows, srcImage.cols, CV_8UC3);
     warpPerspective(srcImage, transformed, transmtx, srcImage.size());
+
+    // box to rect:
+
+    polyPoints.clear();
+    boundingRectPoints.clear();
+
+    polyPoints.push_back(box[0]);
+    polyPoints.push_back(box[1]);
+    polyPoints.push_back(box[3]);
+    polyPoints.push_back(box[2]);
+
+    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y));
+    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + rect.size.height));
+    boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y));
+    boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y + rect.size.height));
+
+     transmtx = getPerspectiveTransform(polyPoints, boundingRectPoints);
+    warpPerspective(transformed, transformed, transmtx, transformed.size());
 
     namedWindow("transformed", 1);
     imshow("transformed", transformed);
