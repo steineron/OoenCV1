@@ -131,6 +131,7 @@ static void processImage(Mat &srcImage) {
     Scalar blue = Scalar(255, 128, 0);
     Scalar red = Scalar(0, 128, 255);
     Scalar black = Scalar(0, 0, 0);
+    Scalar orange = Scalar(0,255,220);
 
     String numbers[] = {"1", "2", "3", "4"};
 
@@ -161,9 +162,10 @@ static void processImage(Mat &srcImage) {
     }
 
     for (int j = 0; j < 4; j++) {
-        putText(contouredImage, numbers[j], boundingRectPoints[j], FONT_HERSHEY_SIMPLEX,textScale,black,textThinkness,LINE_8,
-                false);
+        putText(contouredImage, numbers[j], boundingRectPoints[j], FONT_HERSHEY_SIMPLEX,textScale,black,textThinkness,LINE_8);
+        line(contouredImage, boundingRectPoints[j], polyPoints[j], orange, 3, LINE_AA);
     }
+
     namedWindow("contours", 1);
     imshow("contours", contouredImage);
 
@@ -193,7 +195,6 @@ static void processImage(Mat &srcImage) {
 
     contouredImage = image.clone();
 
-    Scalar orange = Scalar(0,255,220);
     for (int j = 0; j < 4; j++) {
         line(contouredImage, polyPoints[j], polyPoints[(j + 1) % 4], red, 3, LINE_AA);
         putText(contouredImage, numbers[j], polyPoints[j], FONT_HERSHEY_SIMPLEX,textScale,red,textThinkness);
