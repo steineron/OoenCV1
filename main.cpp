@@ -4,24 +4,29 @@
 #include "opencv2/highgui.hpp"
 #include <stdio.h>
 
-#include "v1.h"
 
 using namespace cv;
 using namespace std;
+
+
 int edgeThresh = 1;
-int edgeThreshScharr = 1;
-Mat image, gray, blurImage, edge1, edge2, cedge;
-const char *window_name1 = "Edge map : Canny default (Sobel gradient)";
-const char *window_name2 = "Edge map : Canny with custom gradient (Scharr)";
+Mat image, gray, blurImage, edge1;
 
 
 const int w = 500;
 
-static Point2f closestPoint(Point &p, Point2f points[]){
+/**
+ * find the closesest point to @param p in @param points by computing
+ * the minimum Euclidean Distance between the point p and any of the other points
+ * @param p
+ * @param points
+ * @return the point in points closest to p
+ */
+static Point2f closestPoint(Point &p, Point2f points[], int nPoints){
 
     int minDistance = INT_MAX;
     Point2f result;
-    for(int i=0; i<4; i++){
+    for(int i=0; i<nPoints; i++){
         Point2f candidate = points[i];
         int distance = pow(candidate.x - p.x, 2) + pow(candidate.y - p.y, 2);
         if(distance < minDistance){
@@ -34,10 +39,7 @@ static Point2f closestPoint(Point &p, Point2f points[]){
 }
 
 
-// define a trackbar callback
 static void processImage(Mat &srcImage) {
-
-    resize(srcImage, srcImage, Size(0, 0), 0.75, 0.75, INTER_AREA);
 
     // create a BW image:
     cvtColor(srcImage, gray, COLOR_BGR2GRAY);
@@ -155,20 +157,8 @@ static void processImage(Mat &srcImage) {
 
     for(int i=0; i<4; i++){
         polyPoints.push_back(Point2f(approxPoly[i].x, approxPoly[i].y));
-        boundingRectPoints.push_back(closestPoint(approxPoly[i], box));
+        boundingRectPoints.push_back(closestPoint(approxPoly[i], box,4));
     }
-
-    /*polyPoints.push_back(Point2f(approxPoly[0].x, approxPoly[0].y));
-    boundingRectPoints.push_back(closestPoint(approxPoly[0], box));
-
-    polyPoints.push_back(Point2f(approxPoly[1].x, approxPoly[1].y));
-    boundingRectPoints.push_back(closestPoint(approxPoly[1], box));
-
-    polyPoints.push_back(Point2f(approxPoly[2].x, approxPoly[2].y));
-    boundingRectPoints.push_back(closestPoint(approxPoly[2], box));
-
-    polyPoints.push_back(Point2f(approxPoly[3].x, approxPoly[3].y));
-    boundingRectPoints.push_back(closestPoint(approxPoly[3], box));*/
 
     for (int j = 0; j < 4; j++) {
         putText(contouredImage, numbers[j], boundingRectPoints[j], FONT_HERSHEY_SIMPLEX,textScale,black,textThinkness,LINE_8,
@@ -186,20 +176,17 @@ static void processImage(Mat &srcImage) {
     polyPoints.clear();
     boundingRectPoints.clear();
 
-    /*
-    polyPoints.push_back(box[0]);
-    polyPoints.push_back(box[1]);
-    polyPoints.push_back(box[3]);
-    polyPoints.push_back(box[2]);*/
 
+    float h = MIN(rect.size.height,rect.size.width);
+    float w = MAX(rect.size.height,rect.size.width);
     boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y));
-    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + rect.size.height));
-    boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y));
-    boundingRectPoints.push_back(Point2f(boundRect.x + rect.size.width, boundRect.y + rect.size.height));
+    boundingRectPoints.push_back(Point2f(boundRect.x, boundRect.y + h));
+    boundingRectPoints.push_back(Point2f(boundRect.x + w, boundRect.y));
+    boundingRectPoints.push_back(Point2f(boundRect.x + w, boundRect.y + h));
 
     for (int i = 0; i < 4; ++i) {
         Point p = Point(boundingRectPoints[i].x, boundingRectPoints[i].y);
-        polyPoints.push_back(closestPoint(p, box));
+        polyPoints.push_back(closestPoint(p, box, 4));
 
     }
 
@@ -230,12 +217,12 @@ static void processImage(Mat &srcImage) {
 static void help() {
     printf("\nThis sample demonstrates Canny edge detection\n"
            "Call:\n"
-           "    /.edge [image_name -- Default is fruits.jpg]\n\n");
+           "    /.OpenCv1 <path_to_image_file>\n\n");
 }
 
 const char *keys =
         {
-                "{help h||}{@image |fruits.jpg|input image name}"
+                "{help h||}{@image |some_image.jpg|input image name}"
         };
 
 int main(int argc, const char **argv) {
