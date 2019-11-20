@@ -114,13 +114,21 @@ static void processImage(Mat &srcImage) {
     Scalar red = Scalar(0, 128, 255);
     Scalar black = Scalar(0, 0, 0);
 
+    String numbers[] = {"1", "2", "3", "4"};
+
+    double textScale = 5;
+    int textThinkness = 4;
+
     for (int j = 0; j < 4; j++) {
         line(contouredImage, approxPoly[j], approxPoly[(j + 1) % 4], blue, 3, LINE_AA);
+        putText(contouredImage, numbers[j], approxPoly[j], FONT_HERSHEY_SIMPLEX,textScale,blue,textThinkness);
         line(contouredImage, box[j], box[(j + 1) % 4], red, 3, LINE_AA);
+        putText(contouredImage, numbers[j], box[j], FONT_HERSHEY_SIMPLEX,textScale,red,textThinkness);
     }
     // draw the bounding rect
     rectangle(contouredImage, Point(boundRect.x, boundRect.y),
               Point(boundRect.x + boundRect.width, boundRect.y + boundRect.height), black, 3, LINE_AA);
+
 
     namedWindow("contours", 1);
     imshow("contours", contouredImage);
